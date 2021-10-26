@@ -107,16 +107,39 @@ body, button {
             flex-direction: column;
             justify-content: center;     
 
-            width: 180px;
+            width: 240px;
 
             &--gradient {
                 width: 100%;
-                height: 6px;
-                background-image: linear-gradient(to right, #a7e7e7, #296161);
+                height: 8px;
+
+                display: flex;
+                justify-content: space-between;
+
+                & span:nth-of-type(1) {
+                    width: 18%;
+                    background-color: #6c0000;
+                }
+                & span:nth-of-type(2) {
+                    width: 18%;
+                    background-color: #da6d56;
+                }
+                & span:nth-of-type(3) {
+                    width: 18%;
+                    background-color: #CCDDD9;
+                }
+                & span:nth-of-type(4) {
+                    width: 18%;
+                    background-color: #528379;
+                }
+                & span:nth-of-type(5) {
+                    width: 18%;
+                    background-color: #11473C;
+                }
             }
 
             &--data {
-                width: 100%;
+                width: 205px;
                 display: flex;
                 justify-content: space-between;
 

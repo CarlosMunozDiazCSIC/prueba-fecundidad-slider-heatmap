@@ -24,7 +24,20 @@ let tooltip = d3.select('#tooltip');
 let currentRegion = 'ccaa', currentViz = 'slider'; //Otras opciones, 'provincias' y 'heatmap'
 let ccaaData = [], provData = [], ccaaMap, provMap;
 let mapBlock = d3.select('#slider-viz'), mapSvg, projection, path, heatmapBlock = d3.select('#heatmap'), heatmapSvg;
-let colors;
+
+let colors = function(data) {
+    if(data < 1.16) {
+        return '#6c0000';
+    } else if(data >= 1.16 && data < 1.31) {
+        return '#da6d56';
+    } else if (data >= 1.31 && data < 1.45) {
+        return '#CCDDD9';
+    } else if (data >= 1.45 && data < 1.972) {
+        return '#528379';
+    } else {
+        return '#11473C';
+    }
+}
 
 initData();
 
@@ -102,7 +115,7 @@ function createTimeslider(){
 
     /* Los siguientes eventos tienen la capacidad de modificar lo que se muestra en el mapa */
     playButton.onclick = function () {
-        sliderInterval = setInterval(setNewValue,800);
+        sliderInterval = setInterval(setNewValue,600);
         playButton.style.display = 'none';
         pauseButton.style.display = 'inline-block';    
     }
@@ -155,14 +168,6 @@ function initMap() {
     projection = d3_composite.geoConicConformalSpain().scale(2000).fitSize([parseInt(mapBlock.style('width')),parseInt(mapBlock.style('height'))], ccaaMap);
     path = d3.geoPath(projection);
 
-    colors = function(data) {
-        if(data < 1.3) {
-            return 'red';
-        } else {
-            return 'blue';
-        }
-    }
-
     mapSvg.selectAll(`.${currentRegion}-map`)
         .data(ccaaMap.features)
         .enter()
@@ -175,10 +180,24 @@ function initMap() {
                     return item;
                 }
             });
-            return colors(parseInt(data[0].ind_fec.replace(',','.')));
+            return colors(parseFloat(data[0].ind_fec.replace(',','.')));
         })
         .style('stroke', '#cecece')
-        .style('stroke-width', '1px');
+        .style('stroke-width', '1px')
+        .on('mouseover', function(d, i, e) {
+            console.log(d);
+            let html = `<p class="chart__tooltip--title">${d.properties.name} (${currentValue})</p>`;
+
+            tooltip.html(html);
+
+            //Tooltip
+            positionTooltip(window.event, tooltip);
+            getInTooltip(tooltip);
+        })
+        .on('mouseout', function(d) {
+            //Quitamos el tooltip
+            getOutTooltip(tooltip); 
+        });
 
     //Islas Canarias
     mapSvg.append('path')
@@ -188,6 +207,7 @@ function initMap() {
 }
 
 function updateSliderMap(anio, tipo) {
+    console.log("entra");
     mapSvg.selectAll(`.${tipo}-map`)
         .style('fill', function(d) {
             let data = d.properties.data.filter(function(item) {
@@ -195,12 +215,12 @@ function updateSliderMap(anio, tipo) {
                     return item;
                 }
             });
-            return colors(parseInt(data[0].ind_fec));
+            return colors(parseFloat(data[0].ind_fec.replace(',','.')));
         });
 }
 
 function updateMap(tipo) {
-    mapSvg.selectAll(`.${currentRegion}`).remove();
+    mapSvg.selectAll(`.${currentRegion}-map`).remove();
 
     let aux = tipo == 'ccaa' ? ccaaMap : provMap;
 
@@ -216,15 +236,29 @@ function updateMap(tipo) {
                     return item;
                 }
             });
-            return colors(parseInt(data[0].ind_fec.replace(',','.')));
+            return colors(parseFloat(data[0].ind_fec.replace(',','.')));
         })
         .style('stroke', '#cecece')
-        .style('stroke-width', '1px');
+        .style('stroke-width', '1px')
+        .on('mouseover', function(d, i, e) {
+            console.log(d);
+            let html = `<p class="chart__tooltip--title">${d.properties.name} (${currentValue})</p>`;
+
+            tooltip.html(html);
+
+            //Tooltip
+            positionTooltip(window.event, tooltip);
+            getInTooltip(tooltip);
+        })
+        .on('mouseout', function(d) {
+            //Quitamos el tooltip
+            getOutTooltip(tooltip); 
+        });
 }
 
 // MAPA DE CALOR //
 function initHeatmap() {
-    let margin = {top: 30, right: 15, bottom: 10, left: 140};
+    let margin = {top: 30, right: 10, bottom: 10, left: 150};
     let width = parseInt(d3.select('.chart__b-viz').style('width')) - margin.left - margin.right;
     let height = parseInt(d3.select('.chart__b-viz').style('height')) - margin.top - margin.bottom - 15;
 
@@ -241,6 +275,8 @@ function initHeatmap() {
 
     ejeY = ejeY.map(function(item) { return item.key; });
 
+    ejeY = ejeY.reverse();
+
     let ejeX = d3.nest()
         .key(function(d) { return d.anio; })
         .entries(ccaaData);
@@ -250,32 +286,59 @@ function initHeatmap() {
     //Eje X
     let x = d3.scaleBand()
         .range([0, width])
-        .domain(ejeX)
-        .padding(0.01);
+        .domain(ejeX);
+
+    let xAxis = function(g) {
+        g.call(d3.axisTop(x).tickValues(x.domain().filter(function(d,i){
+            return !(i%5);          
+        })));
+        g.call(function(g){g.select('.domain').remove()});
+        g.call(function(g){g.selectAll('.tick line').remove()});
+    }
     
     heatmapSvg.append("g")
         .attr("transform", "translate(0,0)")
-        .call(d3.axisTop(x));
+        .call(xAxis);
 
     let y = d3.scaleBand()
         .range([ height, 0 ])
-        .domain(ejeY)
-        .padding(0.01);
+        .domain(ejeY);
+    
+    let yAxis = function(g) {
+        g.call(d3.axisLeft(y));
+        g.call(function(g){g.select('.domain').remove()});
+        g.call(function(g){g.selectAll('.tick line').remove()});
+    }
     
     heatmapSvg.append("g")
-        .call(d3.axisLeft(y));
+        .call(yAxis);
 
     //Datos
     heatmapSvg.selectAll(`${currentRegion}-heat`)
-      .data(ccaaData, function(d) { return d.nombre_ccaa+':'+d.anio; })
-      .enter()
-      .append("rect")
-      .attr('class', `${currentRegion}-heat`)
-      .attr("x", function(d) { return x(d.anio) })
-      .attr("y", function(d) { return y(d.nombre_ccaa) })
-      .attr("width", x.bandwidth() )
-      .attr("height", y.bandwidth() )
-      .style("fill", function(d) { return colors(d.ind_fec.replace(',','.'))} )
+        .data(ccaaData, function(d) { return d.nombre_ccaa+':'+d.anio; })
+        .enter()
+        .append("rect")
+        .attr('class', `${currentRegion}-heat`)
+        .attr("x", function(d) { return x(d.anio) })
+        .attr("y", function(d) { return y(d.nombre_ccaa) })
+        .attr("width", x.bandwidth() )
+        .attr("height", y.bandwidth() )
+        .style("fill", function(d) { return colors(d.ind_fec.replace(',','.'))} )
+        .on('mouseover', function(d, i, e) {
+            console.log(d);
+            let html = `<p class="chart__tooltip--title">${d.nombre_ccaa} (${d.anio})</p>
+                <p class="chart__tooltip--text">Indicador de fecundidad: ${d.ind_fec}</p>`;
+
+            tooltip.html(html);
+
+            //Tooltip
+            positionTooltip(window.event, tooltip);
+            getInTooltip(tooltip);
+        })
+        .on('mouseout', function(d) {
+            //Quitamos el tooltip
+            getOutTooltip(tooltip); 
+        });
 }
 
 function updateHeatmap(tipo) {
@@ -283,9 +346,9 @@ function updateHeatmap(tipo) {
     heatmapBlock.selectAll(`*`).remove();
 
     //Configuramos los nuevos datos
-    let margin = {top: 30, right: 15, bottom: 10, left: 140};
+    let margin = {top: 30, right: 10, bottom: 10, left: 150};
     let width = parseInt(d3.select('.chart__b-viz').style('width')) - margin.left - margin.right;
-    let height = tipo == 'ccaa' ? parseInt(d3.select('.chart__b-viz').style('height')) - margin.top - margin.bottom - 15 : 700;
+    let height = tipo == 'ccaa' ? parseInt(d3.select('.chart__b-viz').style('height')) - margin.top - margin.bottom - 15 : 800;
 
     heatmapSvg = heatmapBlock.append('svg')
         .attr("height", height + margin.top + margin.bottom)
@@ -303,6 +366,8 @@ function updateHeatmap(tipo) {
 
     ejeY = ejeY.map(function(item) { return item.key; });
 
+    ejeY = ejeY.reverse();
+
     let ejeX = d3.nest()
         .key(function(d) { return d.anio; })
         .entries(aux);
@@ -312,20 +377,32 @@ function updateHeatmap(tipo) {
     //Eje X
     let x = d3.scaleBand()
         .range([0, width])
-        .domain(ejeX)
-        .padding(0.01);
+        .domain(ejeX);
+    
+    let xAxis = function(g) {
+        g.call(d3.axisTop(x).tickValues(x.domain().filter(function(d,i){
+            return !(i%5);          
+        })));
+        g.call(function(g){g.select('.domain').remove()});
+        g.call(function(g){g.selectAll('.tick line').remove()});
+    }
     
     heatmapSvg.append("g")
         .attr("transform", "translate(0,0)")
-        .call(d3.axisTop(x));
+        .call(xAxis);
 
     let y = d3.scaleBand()
         .range([ height, 0 ])
-        .domain(ejeY)
-        .padding(0.01);
+        .domain(ejeY);
+
+    let yAxis = function(g) {
+        g.call(d3.axisLeft(y));
+        g.call(function(g){g.select('.domain').remove()});
+        g.call(function(g){g.selectAll('.tick line').remove()});
+    }
     
     heatmapSvg.append("g")
-        .call(d3.axisLeft(y));
+        .call(yAxis);
 
     heatmapSvg.selectAll(`${tipo}-heat`)
         .data(aux, function(d) { return d[aux2] + ':' + d.anio; })
@@ -336,7 +413,22 @@ function updateHeatmap(tipo) {
         .attr("y", function(d) { return y(d[aux2]) })
         .attr("width", x.bandwidth() )
         .attr("height", y.bandwidth() )
-        .style("fill", function(d) { return colors(d.ind_fec.replace(',','.'))} );
+        .style("fill", function(d) { return colors(d.ind_fec.replace(',','.'))} )
+        .on('mouseover', function(d, i, e) {
+            console.log(d);
+            let html = `<p class="chart__tooltip--title">${d[aux2]} (${d.anio})</p>
+                <p class="chart__tooltip--text">Indicador de fecundidad: ${d.ind_fec}</p>`;
+
+            tooltip.html(html);
+
+            //Tooltip
+            positionTooltip(window.event, tooltip);
+            getInTooltip(tooltip);
+        })
+        .on('mouseout', function(d) {
+            //Quitamos el tooltip
+            getOutTooltip(tooltip); 
+        });
 }
 
 // Módulos para visualizar unos bloques u otros
