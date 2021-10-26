@@ -23,7 +23,7 @@ let tooltip = d3.select('#tooltip');
 //Variables para visualización
 let currentRegion = 'ccaa', currentViz = 'slider'; //Otras opciones, 'provincias' y 'heatmap'
 let ccaaData = [], provData = [], ccaaMap, provMap;
-let mapBlock = d3.select('#slider-viz'), mapSvg, projection, path, heatmapBlock = d3.select('#heatmap');
+let mapBlock = d3.select('#slider-viz'), mapSvg, projection, path, heatmapBlock = d3.select('#heatmap'), heatmapSvg;
 let colors;
 
 initData();
@@ -93,9 +93,8 @@ let sliderInterval;
 * Funciones para configurar el timeslider (en consonancia con los datos del archivo) 
 */
 function createTimeslider(){
-    let size = yearsDifference, step = 1;
+    let step = 1;
 
-    sliderRange.size = size;
     sliderRange.min = firstValue;
     sliderRange.max = lastValue;
     sliderRange.step = step;
@@ -156,15 +155,19 @@ function initMap() {
     projection = d3_composite.geoConicConformalSpain().scale(2000).fitSize([parseInt(mapBlock.style('width')),parseInt(mapBlock.style('height'))], ccaaMap);
     path = d3.geoPath(projection);
 
-    colors = d3.scaleLinear()
-        .domain([0,6])
-        .range(['#a7e7e7', '#296161']);
+    colors = function(data) {
+        if(data < 1.3) {
+            return 'red';
+        } else {
+            return 'blue';
+        }
+    }
 
-    mapSvg.selectAll(`.${currentRegion}`)
+    mapSvg.selectAll(`.${currentRegion}-map`)
         .data(ccaaMap.features)
         .enter()
         .append('path')
-        .attr('class', `${currentRegion}`)
+        .attr('class', `${currentRegion}-map`)
         .attr('d', path)
         .style('fill', function(d) {
             let data = d.properties.data.filter(function(item) {
@@ -172,7 +175,6 @@ function initMap() {
                     return item;
                 }
             });
-            console.log(data);
             return colors(parseInt(data[0].ind_fec.replace(',','.')));
         })
         .style('stroke', '#cecece')
@@ -186,7 +188,7 @@ function initMap() {
 }
 
 function updateSliderMap(anio, tipo) {
-    mapSvg.selectAll(`.${tipo}`)
+    mapSvg.selectAll(`.${tipo}-map`)
         .style('fill', function(d) {
             let data = d.properties.data.filter(function(item) {
                 if(parseInt(item.anio) == anio){
@@ -202,37 +204,140 @@ function updateMap(tipo) {
 
     let aux = tipo == 'ccaa' ? ccaaMap : provMap;
 
-    mapSvg.selectAll(`.${tipo}`)
+    mapSvg.selectAll(`.${tipo}-map`)
         .data(aux.features)
         .enter()
         .append('path')
-        .attr('class', `${tipo}`)
+        .attr('class', `${tipo}-map`)
         .attr('d', path)
         .style('fill', function(d) {
-            console.log(d, currentValue);
             let data = d.properties.data.filter(function(item) {
                 if(parseInt(item.anio) == currentValue){
                     return item;
                 }
             });
-            console.log(data);
             return colors(parseInt(data[0].ind_fec.replace(',','.')));
         })
         .style('stroke', '#cecece')
         .style('stroke-width', '1px');
-
-    currentRegion = tipo;
 }
 
 // MAPA DE CALOR //
 function initHeatmap() {
+    let margin = {top: 30, right: 15, bottom: 10, left: 140};
+    let width = parseInt(d3.select('.chart__b-viz').style('width')) - margin.left - margin.right;
+    let height = parseInt(d3.select('.chart__b-viz').style('height')) - margin.top - margin.bottom - 15;
 
+    heatmapSvg = heatmapBlock.append('svg')
+        .attr("height", height + margin.top + margin.bottom)
+        .attr("width", width + margin.left + margin.right)
+        .append("g")
+        .attr("transform","translate(" + margin.left + "," + margin.top + ")");
+
+    //Nos quedamos con los grupos apropiados
+    let ejeY = d3.nest()
+        .key(function(d) { return d.nombre_ccaa; })
+        .entries(ccaaData);
+
+    ejeY = ejeY.map(function(item) { return item.key; });
+
+    let ejeX = d3.nest()
+        .key(function(d) { return d.anio; })
+        .entries(ccaaData);
+
+    ejeX = ejeX.map(function(item) { return item.key; });
+
+    //Eje X
+    let x = d3.scaleBand()
+        .range([0, width])
+        .domain(ejeX)
+        .padding(0.01);
+    
+    heatmapSvg.append("g")
+        .attr("transform", "translate(0,0)")
+        .call(d3.axisTop(x));
+
+    let y = d3.scaleBand()
+        .range([ height, 0 ])
+        .domain(ejeY)
+        .padding(0.01);
+    
+    heatmapSvg.append("g")
+        .call(d3.axisLeft(y));
+
+    //Datos
+    heatmapSvg.selectAll(`${currentRegion}-heat`)
+      .data(ccaaData, function(d) { return d.nombre_ccaa+':'+d.anio; })
+      .enter()
+      .append("rect")
+      .attr('class', `${currentRegion}-heat`)
+      .attr("x", function(d) { return x(d.anio) })
+      .attr("y", function(d) { return y(d.nombre_ccaa) })
+      .attr("width", x.bandwidth() )
+      .attr("height", y.bandwidth() )
+      .style("fill", function(d) { return colors(d.ind_fec.replace(',','.'))} )
 }
 
 function updateHeatmap(tipo) {
+    //Removemos lo que había previamente
+    heatmapBlock.selectAll(`*`).remove();
 
+    //Configuramos los nuevos datos
+    let margin = {top: 30, right: 15, bottom: 10, left: 140};
+    let width = parseInt(d3.select('.chart__b-viz').style('width')) - margin.left - margin.right;
+    let height = tipo == 'ccaa' ? parseInt(d3.select('.chart__b-viz').style('height')) - margin.top - margin.bottom - 15 : 700;
+
+    heatmapSvg = heatmapBlock.append('svg')
+        .attr("height", height + margin.top + margin.bottom)
+        .attr("width", width + margin.left + margin.right)
+        .append("g")
+        .attr("transform","translate(" + margin.left + "," + margin.top + ")");
+
+    let aux = tipo == 'ccaa' ? ccaaData : provData;
+    let aux2 = tipo == 'ccaa' ? 'nombre_ccaa' : 'nombre_prov';
+
+    //Nos quedamos con los grupos apropiados
+    let ejeY = d3.nest()
+        .key(function(d) { return d[aux2]; })
+        .entries(aux);
+
+    ejeY = ejeY.map(function(item) { return item.key; });
+
+    let ejeX = d3.nest()
+        .key(function(d) { return d.anio; })
+        .entries(aux);
+
+    ejeX = ejeX.map(function(item) { return item.key; });
+
+    //Eje X
+    let x = d3.scaleBand()
+        .range([0, width])
+        .domain(ejeX)
+        .padding(0.01);
+    
+    heatmapSvg.append("g")
+        .attr("transform", "translate(0,0)")
+        .call(d3.axisTop(x));
+
+    let y = d3.scaleBand()
+        .range([ height, 0 ])
+        .domain(ejeY)
+        .padding(0.01);
+    
+    heatmapSvg.append("g")
+        .call(d3.axisLeft(y));
+
+    heatmapSvg.selectAll(`${tipo}-heat`)
+        .data(aux, function(d) { return d[aux2] + ':' + d.anio; })
+        .enter()
+        .append("rect")
+        .attr('class', `${tipo}-heat`)
+        .attr("x", function(d) { return x(d.anio) })
+        .attr("y", function(d) { return y(d[aux2]) })
+        .attr("width", x.bandwidth() )
+        .attr("height", y.bandwidth() )
+        .style("fill", function(d) { return colors(d.ind_fec.replace(',','.'))} );
 }
-
 
 // Módulos para visualizar unos bloques u otros
 let regionBtns = document.getElementsByClassName('btn__chart--first');
@@ -268,6 +373,8 @@ for(let i = 0; i < vizBtns.length; i++) {
 function updateRegion(tipo) {
     updateHeatmap(tipo);
     updateMap(tipo);
+
+    currentRegion = tipo;
 }
 
 function updateViz(viz) {
