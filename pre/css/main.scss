@@ -102,49 +102,26 @@ body, button {
 
         &__legend {
             width: 100%;
-            margin-top: 12px;
+            margin: 12px auto 0px auto;
 
             display: flex;
-            justify-content: flex-end;
-            flex-wrap: wrap;            
+            flex-direction: column;
+            justify-content: center;     
 
-            &--item {
-                position: relative;
+            width: 180px;
 
+            &--gradient {
+                width: 100%;
+                height: 6px;
+                background-image: linear-gradient(to right, #a7e7e7, #296161);
+            }
+
+            &--data {
+                width: 100%;
                 display: flex;
-                align-items: center;
+                justify-content: space-between;
 
-                font-style: normal;
-                font-weight: normal;
-                font-size: 0.9em;
-                line-height: 10px;    
-
-                padding-left: 18px;
-                margin-right: 18px;
-
-                &:last-child {
-                    margin-right: 0px;
-                }
-
-                &::before {
-                    position: absolute;
-                    content: '';
-                    top: 50%;
-                    left: 0;
-                    transform: translateY(-50%);
-                    width: 15px;
-                    height: 15px;
-                    border-radius: 50%;
-                    background-color: #ccc; /* Este es el atributo a modificar */
-                }
-
-                //En función de la clase CSS que le acompañe, tendrá un color u otro
-                &.first::before {
-                    background-color: #9E9E9E;
-                }
-                &.second::before {
-                    background-color: #5E5E5E;
-                }
+                font-size: 0.85em;
             }
         }
 
@@ -163,6 +140,152 @@ body, button {
                     width: 100%;
                     height: 100%;
                 }
+
+                //Slider
+                .b-slider {
+                    .slider-control {
+                        width: 100%;
+                        display: flex;
+                        align-items: center;
+
+                        .slider-buttons {
+                            display: flex;
+                            justify-content: center;
+                            align-items: center;
+                            margin-right: 8px;
+                            flex-shrink: 0;
+                            width: 32px;
+                            height: 32px;
+                            background-color: #000;
+                            border-radius: 50%;
+                        }
+                        img.btnControl{
+                            cursor: pointer;
+                            transform: translateX(1px);  
+                        }
+                        img.btnControl#btnPause{
+                            display: none;
+                            transform: translateX(0px); 
+                        }
+
+                        .slider-text {
+                            font-size: 0.85rem;
+                            font-weight: normal;
+                            font-stretch: normal;
+                            font-style: normal;
+                            line-height: 1.25;
+                            letter-spacing: normal;
+                            color: #828282;
+                        }
+                    }           
+
+                    .slider-container {
+                        width: 100%;
+                        margin-top: 12px;
+
+                        #slider { 
+                            margin: auto;
+                            -webkit-appearance: none;
+                            position: relative;
+                            overflow: hidden;
+                            height: 5px;
+                            width: 100%;
+                            cursor: pointer;
+                            border-radius: 0;
+                        }
+                        ::-webkit-slider-runnable-track {
+                            background: #cecece;
+                        }
+            
+                        ::-webkit-slider-thumb {
+                            -webkit-appearance: none;
+                            width: 0px; /* 1 */
+                            height: 0px;
+                            box-shadow: -100vw 0 0 100vw #000;
+                            border: 5px solid #000; /* 1 */
+                        }
+
+                        ::-moz-range-track {
+                            height: 5px;
+                            background: #CECECE;
+                        }
+
+                        ::-moz-range-thumb {
+                            height: 0px;
+                            width: 0px;
+                            box-sizing: border-box;
+                            box-shadow: -100vw 0 0 100vw #000;
+                            border: 5px solid #000; /* 1 */    
+                        }
+
+                        ::-ms-fill-lower { 
+                            background: #cecece;
+                        }
+
+                        ::-ms-thumb {
+                            box-sizing: border-box;
+                            box-shadow: -100vw 0 0 100vw #000;
+                            border: 5px solid #000; /* 1 */   
+                            height: 0px;
+                            width: 0px;    
+                        }
+
+                        ::-ms-ticks-after { 
+                            display: none; 
+                        }
+
+                        ::-ms-ticks-before { 
+                            display: none; 
+                        }
+
+                        ::-ms-track { 
+                            background: #CECECE;
+                            color: transparent;
+                            height: 5px;
+                            border: none;
+                        }
+
+                        ::-ms-tooltip { 
+                            display: none;
+                        }
+
+                        #slider-dates {
+                            display: flex;    
+                            flex-direction: row;
+                            justify-content: space-between;
+                            align-items: center;
+                            position: relative;
+                            font-size: 0.9rem;
+                            font-weight: bold;
+                            font-stretch: normal;
+                            font-style: normal;
+                            line-height: normal;
+                            color: #B4B4B4;
+            
+                            #minDate {
+                                position: relative;
+                            }
+                            #maxDate {
+                                position: relative;
+                            }
+                            #sliderDate {
+                                font-size: 0.9rem;
+                                font-weight: bold;
+                                font-stretch: normal;
+                                font-style: normal;
+                                line-height: normal;
+                                color: #000;
+                                position: absolute;
+                                top: 50%;
+                                left: 50%;
+                                transform: translate(-50%, -50%);
+                            }
+                        }  
+                    }                     
+                }
+
+                //Mapa
+                height: 200px;
             }
 
             //Textos en ejes

@@ -37,23 +37,88 @@ function initData() {
 }
 
 // MAPA CON SLIDER //
+//Lógica del slider
+let currentValue = 2020;
+const firstValue = 1975;
+const lastValue = 2020;
+const yearsDifference = (lastValue - firstValue) + 1;
+
+let sliderRange = document.getElementById('slider');
+let sliderDate = document.getElementById('sliderDate');
+let playButton = document.getElementById('btnPlay');
+let pauseButton = document.getElementById('btnPause');
+let sliderInterval;
+
+/* 
+* Funciones para configurar el timeslider (en consonancia con los datos del archivo) 
+*/
+function createTimeslider(){
+    let size = yearsDifference, step = 1;
+    sliderRange.size = size;
+    sliderRange.min = firstValue;
+    sliderRange.max = lastValue;
+    sliderRange.step = step;
+    sliderRange.value = lastValue;
+
+    /* Los siguientes eventos tienen la capacidad de modificar lo que se muestra en el mapa */
+    playButton.onclick = function () {
+        sliderInterval = setInterval(setNewValue,1000);
+        playButton.style.display = 'none';
+        pauseButton.style.display = 'inline-block';    
+    }
+
+    pauseButton.onclick = function () {
+        clearInterval(sliderInterval);
+        playButton.style.display = 'inline-block';
+        pauseButton.style.display = 'none';
+    }
+
+    sliderRange.oninput = function () {
+        let currentValue = parseInt(sliderRange.value);
+        setNewValue(currentValue);
+    }
+}
+
+function setNewValue() {
+    let value = parseInt(sliderRange.value);
+    if(value == lastValue) {
+        sliderRange.value = firstValue;
+    } else {
+        sliderRange.value = value + 1;
+    }
+    currentValue = sliderRange.value;
+
+    showSliderDate(currentValue);
+    updateMap(currentValue);
+
+    if (currentValue == 2020) {
+        clearInterval(sliderInterval);
+        playButton.style.display = 'inline-block';
+        pauseButton.style.display = 'none';
+    }
+}
+
+function showSliderDate(currentValue){
+    sliderDate.textContent = currentValue;
+}
+
+//Mapa
+function initMap() {
+
+}
+
+function updateMap() {
+
+}
+
+
+initMap();
+createTimeslider();
+
+
 
 // MAPA DE CALOR //
 
-
-function updateRegion(tipo) {
-    console.log(tipo);
-}
-
-function updateViz(viz) {
-    let vizs = document.getElementsByClassName('chart__viz');
-
-    for(let i = 0; i < vizs.length; i++) {
-        vizs[i].classList.remove('active');
-    }
-
-    document.getElementsByClassName(`chart__viz--${viz}`)[0].classList.add('active');
-}
 
 
 // Módulos para visualizar unos bloques u otros
@@ -84,6 +149,21 @@ for(let i = 0; i < vizBtns.length; i++) {
         //Cambiar visualización
         updateViz(this.getAttribute('data-type'));
     });
+}
+
+//Modificación de regiones y visualizaciones
+function updateRegion(tipo) {
+    console.log(tipo);
+}
+
+function updateViz(viz) {
+    let vizs = document.getElementsByClassName('chart__viz');
+
+    for(let i = 0; i < vizs.length; i++) {
+        vizs[i].classList.remove('active');
+    }
+
+    document.getElementsByClassName(`chart__viz--${viz}`)[0].classList.add('active');
 }
 
 ///// REDES SOCIALES /////
