@@ -181,7 +181,7 @@ body, button {
 
                     .slider-container {
                         width: 100%;
-                        margin-top: 12px;
+                        margin-top: 4px;
 
                         #slider { 
                             margin: auto;
@@ -285,7 +285,9 @@ body, button {
                 }
 
                 //Mapa
-                height: 200px;
+                &--map {
+                    height: auto;
+                }
             }
 
             //Textos en ejes

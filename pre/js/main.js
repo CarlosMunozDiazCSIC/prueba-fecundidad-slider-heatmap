@@ -3,36 +3,76 @@ import { getInTooltip, getOutTooltip, positionTooltip } from './tooltip';
 import { setRRSSLinks } from './rrss';
 import { numberWithCommas, numberWithCommas2 } from './helpers';
 import 'url-search-params-polyfill';
+//Desarrollo de visualizaciones
 import * as d3 from 'd3';
+import * as topojson from 'topojson-client';
+let d3_composite = require("d3-composite-projections");
 
 //Necesario para importar los estilos de forma automática en la etiqueta 'style' del html final
 import '../css/main.scss';
 
 ///// VISUALIZACIÓN DEL GRÁFICO //////
 let dataSources = [
-    'https://raw.githubusercontent.com/CarlosMunozDiazCSIC/pruebas-fecundidad/main/data/prov_fec.csv',
-    'https://raw.githubusercontent.com/CarlosMunozDiazCSIC/pruebas-fecundidad/main/data/ccaa_fec.csv',
-    'https://raw.githubusercontent.com/CarlosMunozDiazCSIC/pruebas-fecundidad/main/data/provincias.json',    
-    'https://raw.githubusercontent.com/CarlosMunozDiazCSIC/pruebas-fecundidad/main/data/ccaa.json'
+    'https://raw.githubusercontent.com/CarlosMunozDiazCSIC/prueba-fecundidad-slider-heatmap/main/data/prov_fec.csv',
+    'https://raw.githubusercontent.com/CarlosMunozDiazCSIC/prueba-fecundidad-slider-heatmap/main/data/ccaa_fec.csv',
+    'https://raw.githubusercontent.com/CarlosMunozDiazCSIC/prueba-fecundidad-slider-heatmap/main/data/provincias.json',    
+    'https://raw.githubusercontent.com/CarlosMunozDiazCSIC/prueba-fecundidad-slider-heatmap/main/data/ccaa.json'
 ];
 let tooltip = d3.select('#tooltip');
 
 //Variables para visualización
 let currentRegion = 'ccaa', currentViz = 'slider'; //Otras opciones, 'provincias' y 'heatmap'
 let ccaaData = [], provData = [], ccaaMap, provMap;
+let mapBlock = d3.select('#slider-viz'), mapSvg, projection, path, heatmapBlock = d3.select('#heatmap');
+let colors;
 
 initData();
 
 function initData() {
     let q = d3.queue();
+    const csv = d3.dsvFormat(";");
 
     q.defer(d3.text, dataSources[0]);
     q.defer(d3.text, dataSources[1]);
     q.defer(d3.json, dataSources[2]);
     q.defer(d3.json, dataSources[3]);
 
-    q.await(function(err, provData, ccaaData, provAuxmap, ccaaAuxmap) {
+    q.await(function(err, prov, ccaa, provAuxmap, ccaaAuxmap) {
         if (err) throw err;
+
+        //Datos en CSV
+        provData = csv.parse(prov);
+        ccaaData = csv.parse(ccaa);
+
+        //Mapas
+        provMap = topojson.feature(provAuxmap, provAuxmap.objects['provincias']);
+        ccaaMap = topojson.feature(ccaaAuxmap, ccaaAuxmap.objects['ccaa']);        
+
+        //Integración de los datos en las capas de polígonos
+        ccaaMap.features.map(function(item) {
+            let data = ccaaData.filter(function(subItem) {
+                if(parseInt(subItem['id_ccaa']) == parseInt(item.properties.cod_ccaa)){
+                    return subItem;
+                }
+            });
+
+            item.properties.data = data;
+        });
+
+        provMap.features.map(function(item) {
+            let data = provData.filter(function(subItem) {
+                if(parseInt(subItem['id_prov']) == parseInt(item.properties.cod_prov)){
+                    return subItem;
+                }
+            });
+
+            item.properties.data = data;
+        });
+        
+        //Montamos las dos visualizaciones por defecto
+        initMap();
+        createTimeslider();
+        initHeatmap();
     });
 }
 
@@ -41,7 +81,7 @@ function initData() {
 let currentValue = 2020;
 const firstValue = 1975;
 const lastValue = 2020;
-const yearsDifference = (lastValue - firstValue) + 1;
+const yearsDifference = lastValue - firstValue;
 
 let sliderRange = document.getElementById('slider');
 let sliderDate = document.getElementById('sliderDate');
@@ -54,6 +94,7 @@ let sliderInterval;
 */
 function createTimeslider(){
     let size = yearsDifference, step = 1;
+
     sliderRange.size = size;
     sliderRange.min = firstValue;
     sliderRange.max = lastValue;
@@ -62,7 +103,7 @@ function createTimeslider(){
 
     /* Los siguientes eventos tienen la capacidad de modificar lo que se muestra en el mapa */
     playButton.onclick = function () {
-        sliderInterval = setInterval(setNewValue,1000);
+        sliderInterval = setInterval(setNewValue,800);
         playButton.style.display = 'none';
         pauseButton.style.display = 'inline-block';    
     }
@@ -89,7 +130,7 @@ function setNewValue() {
     currentValue = sliderRange.value;
 
     showSliderDate(currentValue);
-    updateMap(currentValue);
+    updateSliderMap(currentValue, currentRegion);
 
     if (currentValue == 2020) {
         clearInterval(sliderInterval);
@@ -104,21 +145,93 @@ function showSliderDate(currentValue){
 
 //Mapa
 function initMap() {
+    //Damos una altura al bloque del mapa
+    document.getElementById('slider-viz').style.height = (440 - document.getElementsByClassName('b-slider')[0].clientHeight) + 'px';
 
+    //Iniciamos la configuración del mapa
+    mapSvg = mapBlock.append('svg')
+        .attr("height", parseInt(mapBlock.style('height')))
+        .attr("width", parseInt(mapBlock.style('width')));
+    
+    projection = d3_composite.geoConicConformalSpain().scale(2000).fitSize([parseInt(mapBlock.style('width')),parseInt(mapBlock.style('height'))], ccaaMap);
+    path = d3.geoPath(projection);
+
+    colors = d3.scaleLinear()
+        .domain([0,6])
+        .range(['#a7e7e7', '#296161']);
+
+    mapSvg.selectAll(`.${currentRegion}`)
+        .data(ccaaMap.features)
+        .enter()
+        .append('path')
+        .attr('class', `${currentRegion}`)
+        .attr('d', path)
+        .style('fill', function(d) {
+            let data = d.properties.data.filter(function(item) {
+                if(parseInt(item.anio) == currentValue){
+                    return item;
+                }
+            });
+            console.log(data);
+            return colors(parseInt(data[0].ind_fec.replace(',','.')));
+        })
+        .style('stroke', '#cecece')
+        .style('stroke-width', '1px');
+
+    //Islas Canarias
+    mapSvg.append('path')
+        .style('fill', 'none')
+        .style('stroke', '#000')
+        .attr('d', projection.getCompositionBorders());
 }
 
-function updateMap() {
-
+function updateSliderMap(anio, tipo) {
+    mapSvg.selectAll(`.${tipo}`)
+        .style('fill', function(d) {
+            let data = d.properties.data.filter(function(item) {
+                if(parseInt(item.anio) == anio){
+                    return item;
+                }
+            });
+            return colors(parseInt(data[0].ind_fec));
+        });
 }
 
+function updateMap(tipo) {
+    mapSvg.selectAll(`.${currentRegion}`).remove();
 
-initMap();
-createTimeslider();
+    let aux = tipo == 'ccaa' ? ccaaMap : provMap;
 
+    mapSvg.selectAll(`.${tipo}`)
+        .data(aux.features)
+        .enter()
+        .append('path')
+        .attr('class', `${tipo}`)
+        .attr('d', path)
+        .style('fill', function(d) {
+            console.log(d, currentValue);
+            let data = d.properties.data.filter(function(item) {
+                if(parseInt(item.anio) == currentValue){
+                    return item;
+                }
+            });
+            console.log(data);
+            return colors(parseInt(data[0].ind_fec.replace(',','.')));
+        })
+        .style('stroke', '#cecece')
+        .style('stroke-width', '1px');
 
+    currentRegion = tipo;
+}
 
 // MAPA DE CALOR //
+function initHeatmap() {
 
+}
+
+function updateHeatmap(tipo) {
+
+}
 
 
 // Módulos para visualizar unos bloques u otros
@@ -153,7 +266,8 @@ for(let i = 0; i < vizBtns.length; i++) {
 
 //Modificación de regiones y visualizaciones
 function updateRegion(tipo) {
-    console.log(tipo);
+    updateHeatmap(tipo);
+    updateMap(tipo);
 }
 
 function updateViz(viz) {
