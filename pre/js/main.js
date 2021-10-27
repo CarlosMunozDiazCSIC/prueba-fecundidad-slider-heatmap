@@ -270,7 +270,7 @@ function initHeatmap() {
 
     //Nos quedamos con los grupos apropiados
     let ejeY = d3.nest()
-        .key(function(d) { return d.nombre_ccaa; })
+        .key(function(d) { return d.abrev_ccaa; })
         .entries(ccaaData);
 
     ejeY = ejeY.map(function(item) { return item.key; });
@@ -315,18 +315,18 @@ function initHeatmap() {
 
     //Datos
     heatmapSvg.selectAll(`${currentRegion}-heat`)
-        .data(ccaaData, function(d) { return d.nombre_ccaa+':'+d.anio; })
+        .data(ccaaData, function(d) { return d.abrev_ccaa+':'+d.anio; })
         .enter()
         .append("rect")
         .attr('class', `${currentRegion}-heat`)
         .attr("x", function(d) { return x(d.anio) })
-        .attr("y", function(d) { return y(d.nombre_ccaa) })
+        .attr("y", function(d) { return y(d.abrev_ccaa) })
         .attr("width", x.bandwidth() )
         .attr("height", y.bandwidth() )
         .style("fill", function(d) { return colors(d.ind_fec.replace(',','.'))} )
         .on('mouseover', function(d, i, e) {
             console.log(d);
-            let html = `<p class="chart__tooltip--title">${d.nombre_ccaa} (${d.anio})</p>
+            let html = `<p class="chart__tooltip--title">${d.abrev_ccaa} (${d.anio})</p>
                 <p class="chart__tooltip--text">Indicador de fecundidad: ${d.ind_fec}</p>`;
 
             tooltip.html(html);
@@ -357,7 +357,7 @@ function updateHeatmap(tipo) {
         .attr("transform","translate(" + margin.left + "," + margin.top + ")");
 
     let aux = tipo == 'ccaa' ? ccaaData : provData;
-    let aux2 = tipo == 'ccaa' ? 'nombre_ccaa' : 'nombre_prov';
+    let aux2 = tipo == 'ccaa' ? 'abrev_ccaa' : 'abrev_prov';
 
     //Nos quedamos con los grupos apropiados
     let ejeY = d3.nest()
