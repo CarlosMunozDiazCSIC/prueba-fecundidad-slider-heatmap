@@ -32,7 +32,7 @@ let colors = function(data) {
         return '#da6d56';
     } else if (data >= 1.31 && data < 1.45) {
         return '#CCDDD9';
-    } else if (data >= 1.45 && data < 1.972) {
+    } else if (data >= 1.45 && data < 1.97) {
         return '#528379';
     } else {
         return '#11473C';
@@ -258,7 +258,7 @@ function updateMap(tipo) {
 
 // MAPA DE CALOR //
 function initHeatmap() {
-    let margin = {top: 30, right: 10, bottom: 10, left: 150};
+    let margin = {top: 25, right: 15, bottom: 5, left: 150};
     let width = parseInt(d3.select('.chart__b-viz').style('width')) - margin.left - margin.right;
     let height = parseInt(d3.select('.chart__b-viz').style('height')) - margin.top - margin.bottom - 15;
 
@@ -346,7 +346,7 @@ function updateHeatmap(tipo) {
     heatmapBlock.selectAll(`*`).remove();
 
     //Configuramos los nuevos datos
-    let margin = {top: 30, right: 10, bottom: 10, left: 150};
+    let margin = {top: 25, right: 15, bottom: 5, left: 150};
     let width = parseInt(d3.select('.chart__b-viz').style('width')) - margin.left - margin.right;
     let height = tipo == 'ccaa' ? parseInt(d3.select('.chart__b-viz').style('height')) - margin.top - margin.bottom - 15 : 800;
 
