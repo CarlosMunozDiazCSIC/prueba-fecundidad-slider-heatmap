@@ -258,8 +258,8 @@ function updateMap(tipo) {
 
 // MAPA DE CALOR //
 function initHeatmap() {
-    let margin = {top: 25, right: 15, bottom: 5, left: 90};
-    let width = parseInt(d3.select('.chart__b-viz').style('width')) - margin.left - margin.right;
+    let margin = {top: 25, right: 12.5, bottom: 5, left: 110};
+    let width = parseInt(d3.select('.chart__b-viz').style('width')) - margin.left - margin.right - 6;
     let height = parseInt(d3.select('.chart__b-viz').style('height')) - margin.top - margin.bottom - 15;
 
     heatmapSvg = heatmapBlock.append('svg')
@@ -271,11 +271,10 @@ function initHeatmap() {
     //Nos quedamos con los grupos apropiados
     let ejeY = d3.nest()
         .key(function(d) { return d.abrev_ccaa; })
-        .entries(ccaaData);
+        .entries(ccaaData);    
 
-    ejeY = ejeY.map(function(item) { return item.key; });
-
-    ejeY = ejeY.reverse();
+    ejeY = sort_aux(ejeY);
+    ejeY = ejeY.map(function(item) { return item.key; });    
 
     let ejeX = d3.nest()
         .key(function(d) { return d.anio; })
@@ -346,8 +345,8 @@ function updateHeatmap(tipo) {
     heatmapBlock.selectAll(`*`).remove();
 
     //Configuramos los nuevos datos
-    let margin = {top: 25, right: 15, bottom: 5, left: 90};
-    let width = parseInt(d3.select('.chart__b-viz').style('width')) - margin.left - margin.right;
+    let margin = {top: 25, right: 12.5, bottom: 5, left: 110};
+    let width = parseInt(d3.select('.chart__b-viz').style('width')) - margin.left - margin.right - 6;
     let height = tipo == 'ccaa' ? parseInt(d3.select('.chart__b-viz').style('height')) - margin.top - margin.bottom - 15 : 800;
 
     heatmapSvg = heatmapBlock.append('svg')
@@ -364,9 +363,8 @@ function updateHeatmap(tipo) {
         .key(function(d) { return d[aux2]; })
         .entries(aux);
 
-    ejeY = ejeY.map(function(item) { return item.key; });
-
-    ejeY = ejeY.reverse();
+    ejeY = sort_aux(ejeY);
+    ejeY = ejeY.map(function(item) { return item.key; });    
 
     let ejeX = d3.nest()
         .key(function(d) { return d.anio; })
@@ -429,6 +427,20 @@ function updateHeatmap(tipo) {
             //Quitamos el tooltip
             getOutTooltip(tooltip); 
         });
+}
+
+function sort_aux(ejes) {
+    let aux = [];
+    for(let i = 0; i < ejes.length; i++) {
+        let data = ejes[i].values;
+        let mean = d3.mean(data, function(d) { return +d.ind_fec.replace(',','.')});
+        aux.push({'key':ejes[i].key, 'mean': mean});
+    }
+    //Ordenación del auxiliar
+    aux.sort(function(x, y){
+        return d3.descending(x.mean, y.mean);
+    });
+    return aux;        
 }
 
 // Módulos para visualizar unos bloques u otros
