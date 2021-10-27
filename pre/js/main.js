@@ -258,7 +258,7 @@ function updateMap(tipo) {
 
 // MAPA DE CALOR //
 function initHeatmap() {
-    let margin = {top: 25, right: 15, bottom: 5, left: 150};
+    let margin = {top: 25, right: 15, bottom: 5, left: 90};
     let width = parseInt(d3.select('.chart__b-viz').style('width')) - margin.left - margin.right;
     let height = parseInt(d3.select('.chart__b-viz').style('height')) - margin.top - margin.bottom - 15;
 
@@ -346,7 +346,7 @@ function updateHeatmap(tipo) {
     heatmapBlock.selectAll(`*`).remove();
 
     //Configuramos los nuevos datos
-    let margin = {top: 25, right: 15, bottom: 5, left: 150};
+    let margin = {top: 25, right: 15, bottom: 5, left: 90};
     let width = parseInt(d3.select('.chart__b-viz').style('width')) - margin.left - margin.right;
     let height = tipo == 'ccaa' ? parseInt(d3.select('.chart__b-viz').style('height')) - margin.top - margin.bottom - 15 : 800;
 
