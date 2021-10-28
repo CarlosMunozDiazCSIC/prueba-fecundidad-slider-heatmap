@@ -336,7 +336,7 @@ function initHeatmap() {
 
     let xAxis = function(g) {
         g.call(d3.axisTop(x).tickValues(x.domain().filter(function(d,i){
-            return !(i%5);          
+            return !(i%9);          
         })));
         g.call(function(g){g.select('.domain').remove()});
         g.call(function(g){g.selectAll('.tick line').remove()});
@@ -439,7 +439,7 @@ function updateHeatmap(tipo) {
     
     let xAxis = function(g) {
         g.call(d3.axisTop(x).tickValues(x.domain().filter(function(d,i){
-            return !(i%5);          
+            return !(i%9);          
         })));
         g.call(function(g){g.select('.domain').remove()});
         g.call(function(g){g.selectAll('.tick line').remove()});
