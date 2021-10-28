@@ -86,6 +86,10 @@ function initData() {
         initMap();
         createTimeslider();
         initHeatmap();
+
+        setTimeout(() => {
+            setChartCanvas();
+        }, 5000);
     });
 }
 
@@ -132,7 +136,7 @@ function createTimeslider(){
     }
 }
 
-function setNewValue() {
+function setNewValue() {    
     let value = parseInt(sliderRange.value);
     if(value == lastValue) {
         sliderRange.value = firstValue;
@@ -148,11 +152,25 @@ function setNewValue() {
         clearInterval(sliderInterval);
         playButton.style.display = 'inline-block';
         pauseButton.style.display = 'none';
-    }
+    }        
 }
 
 function showSliderDate(currentValue){
     sliderDate.textContent = currentValue;
+}
+
+function stopSlider() {
+    sliderRange.value = lastValue;
+    currentValue = sliderRange.value;
+
+    showSliderDate(currentValue);
+    updateSliderMap(currentValue, currentRegion);
+
+    if (currentValue == 2020) {
+        clearInterval(sliderInterval);
+        playButton.style.display = 'inline-block';
+        pauseButton.style.display = 'none';
+    } 
 }
 
 //Mapa
@@ -185,8 +203,20 @@ function initMap() {
         .style('stroke', '#cecece')
         .style('stroke-width', '1px')
         .on('mouseover', function(d, i, e) {
-            console.log(d);
-            let html = `<p class="chart__tooltip--title">${d.properties.name} (${currentValue})</p>`;
+            //Línea diferencial y cambio del polígonos
+            let currentCCAA = this;
+                
+            document.getElementsByTagName('svg')[0].removeChild(this);
+            document.getElementsByTagName('svg')[0].appendChild(currentCCAA);
+
+            currentCCAA.style.stroke = '#000';
+            currentCCAA.style.strokeWidth = '1.5px';
+
+            let dato = d.properties.data.filter(function(item) { if(item.anio == currentValue) { return item; } });
+
+            //Pintamos el HTML
+            let html = `<p class="chart__tooltip--title">${d.properties.name} (${currentValue})</p>
+                <p class="chart__tooltip--text">Indicador coyuntural de fecundidad: ${dato[0].ind_fec}</p>`;
 
             tooltip.html(html);
 
@@ -195,6 +225,10 @@ function initMap() {
             getInTooltip(tooltip);
         })
         .on('mouseout', function(d) {
+            //Línea diferencial
+            this.style.stroke = '#cecece';
+            this.style.strokeWidth = '1px';
+
             //Quitamos el tooltip
             getOutTooltip(tooltip); 
         });
@@ -207,7 +241,6 @@ function initMap() {
 }
 
 function updateSliderMap(anio, tipo) {
-    console.log("entra");
     mapSvg.selectAll(`.${tipo}-map`)
         .style('fill', function(d) {
             let data = d.properties.data.filter(function(item) {
@@ -223,7 +256,6 @@ function updateMap(tipo) {
     mapSvg.selectAll(`.${currentRegion}-map`).remove();
 
     let aux = tipo == 'ccaa' ? ccaaMap : provMap;
-
     mapSvg.selectAll(`.${tipo}-map`)
         .data(aux.features)
         .enter()
@@ -241,8 +273,19 @@ function updateMap(tipo) {
         .style('stroke', '#cecece')
         .style('stroke-width', '1px')
         .on('mouseover', function(d, i, e) {
-            console.log(d);
-            let html = `<p class="chart__tooltip--title">${d.properties.name} (${currentValue})</p>`;
+            //Línea diferencial y cambio del polígonos
+            let currentCCAA = this;
+                
+            document.getElementsByTagName('svg')[0].removeChild(this);
+            document.getElementsByTagName('svg')[0].appendChild(currentCCAA);
+
+            currentCCAA.style.stroke = '#000';
+            currentCCAA.style.strokeWidth = '1.5px';
+
+            //Pintamos el HTML
+            let dato = d.properties.data.filter(function(item) { if(item.anio == currentValue) { return item; } });
+            let html = `<p class="chart__tooltip--title">${d.properties.name} (${currentValue})</p>
+                <p class="chart__tooltip--text">Indicador coyuntural de fecundidad: ${dato[0].ind_fec}</p>`;
 
             tooltip.html(html);
 
@@ -251,6 +294,10 @@ function updateMap(tipo) {
             getInTooltip(tooltip);
         })
         .on('mouseout', function(d) {
+            //Línea diferencial
+            this.style.stroke = '#cecece';
+            this.style.strokeWidth = '1px';
+
             //Quitamos el tooltip
             getOutTooltip(tooltip); 
         });
@@ -324,9 +371,18 @@ function initHeatmap() {
         .attr("height", y.bandwidth() )
         .style("fill", function(d) { return colors(d.ind_fec.replace(',','.'))} )
         .on('mouseover', function(d, i, e) {
-            console.log(d);
+            //Línea diferencial y cambio del polígonos
+            let currentCCAA = this;
+                
+            document.getElementsByTagName('svg')[1].getElementsByTagName('g')[0].removeChild(this);
+            document.getElementsByTagName('svg')[1].getElementsByTagName('g')[0].appendChild(currentCCAA);
+
+            currentCCAA.style.stroke = '#000';
+            currentCCAA.style.strokeWidth = '1.5px';
+
+            //Texto
             let html = `<p class="chart__tooltip--title">${d.abrev_ccaa} (${d.anio})</p>
-                <p class="chart__tooltip--text">Indicador de fecundidad: ${d.ind_fec}</p>`;
+                <p class="chart__tooltip--text">Indicador coyuntural de fecundidad: ${d.ind_fec}</p>`;
 
             tooltip.html(html);
 
@@ -335,6 +391,10 @@ function initHeatmap() {
             getInTooltip(tooltip);
         })
         .on('mouseout', function(d) {
+            //Línea diferencial
+            this.style.stroke = 'none';
+            this.style.strokeWidth = '0px';
+
             //Quitamos el tooltip
             getOutTooltip(tooltip); 
         });
@@ -347,7 +407,7 @@ function updateHeatmap(tipo) {
     //Configuramos los nuevos datos
     let margin = {top: 25, right: 12.5, bottom: 5, left: 110};
     let width = parseInt(d3.select('.chart__b-viz').style('width')) - margin.left - margin.right - 6;
-    let height = tipo == 'ccaa' ? parseInt(d3.select('.chart__b-viz').style('height')) - margin.top - margin.bottom - 15 : 800;
+    let height = tipo == 'ccaa' ? parseInt(d3.select('.chart__b-viz').style('height')) - margin.top - margin.bottom - 15 : 870;
 
     heatmapSvg = heatmapBlock.append('svg')
         .attr("height", height + margin.top + margin.bottom)
@@ -413,9 +473,18 @@ function updateHeatmap(tipo) {
         .attr("height", y.bandwidth() )
         .style("fill", function(d) { return colors(d.ind_fec.replace(',','.'))} )
         .on('mouseover', function(d, i, e) {
-            console.log(d);
+            //Línea diferencial y cambio del polígonos
+            let currentCCAA = this;
+                
+            document.getElementsByTagName('svg')[1].getElementsByTagName('g')[0].removeChild(this);
+            document.getElementsByTagName('svg')[1].getElementsByTagName('g')[0].appendChild(currentCCAA);
+
+            currentCCAA.style.stroke = '#000';
+            currentCCAA.style.strokeWidth = '1.5px';
+
+            //Texto
             let html = `<p class="chart__tooltip--title">${d[aux2]} (${d.anio})</p>
-                <p class="chart__tooltip--text">Indicador de fecundidad: ${d.ind_fec}</p>`;
+                <p class="chart__tooltip--text">Indicador coyuntural de fecundidad: ${d.ind_fec}</p>`;
 
             tooltip.html(html);
 
@@ -424,6 +493,10 @@ function updateHeatmap(tipo) {
             getInTooltip(tooltip);
         })
         .on('mouseout', function(d) {
+            //Línea diferencial
+            this.style.stroke = 'none';
+            this.style.strokeWidth = '0px';
+
             //Quitamos el tooltip
             getOutTooltip(tooltip); 
         });
@@ -489,6 +562,7 @@ function updateViz(viz) {
     }
 
     document.getElementsByClassName(`chart__viz--${viz}`)[0].classList.add('active');
+    stopSlider();
 }
 
 ///// REDES SOCIALES /////
